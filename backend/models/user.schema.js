@@ -1,7 +1,12 @@
-const mongoose = require("mongoose")
+import mongoose from "mongoose"
 import AuthRoles from "../utils/authRoles"
+import JWT from "jsonwebtoken"
+import crypto from "crypto"
+import bcrypt from "bcrypt"
+import envConfig from "../config"
+import {envConfigDes} from "../config"
 
-// FIXME: new and import
+// FIXME: new and import, export, DESENV
 const UserSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -32,4 +37,36 @@ const UserSchema = new mongoose.Schema({
 }, 
 {timestamps: true}) //FIXME: Timeseries - createdAt UpdatedAt
 
-module.exports = mongoose.model("user", UserSchema)
+//FIXME: Mongoose Hooks - pre, post, error - middleware functions
+
+UserSchema.pre("save", async function(next){ //TODO: use function statements
+    
+    //TODO: this.modified("key") TODO:
+    if(!this.modified("password")){
+        return next();
+    }
+    this.password = await bcrypt.hash(this.password, envConfigDes.BCRYPT_PASSWORD_SALT) //FIXME: await
+    next()
+
+})
+
+//FIXME: Mongoose Schema Methods
+
+UserSchema.methods = {
+    comparePassword: async function(enteredPassword){
+        return await bcrypt.compare(enteredPassword, this.password) //TODO: Boolean is returned
+    },
+    getJwtToken: function(){
+        //FIXME: this
+        return JWT.sign({
+            _id: this._id,
+            role: this.role
+        },
+        envConfig.JWT_TOKEN_SECRET,
+        {
+            expiresIn: envConfig.JWT_TOKEN_EXPIRY
+        })
+    }
+}
+
+export default mongoose.model("User", UserSchema)
