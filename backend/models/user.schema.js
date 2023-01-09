@@ -5,7 +5,6 @@ const crypto = require("crypto") //FIXME:
 const bcrypt = require("bcrypt")
 const envConfig = require("../config")
 
-// FIXME: new
 const UserSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -52,8 +51,8 @@ UserSchema.pre("save", async function(next){ //TODO: use function statements
 //FIXME: Mongoose Schema Methods
 
 UserSchema.methods = {
-    comparePassword: function(enteredPassword){
-        return bcrypt.compare(enteredPassword, this.password) //TODO: Promise is returned
+    comparePassword: async function(enteredPassword){
+        return await bcrypt.compare(enteredPassword, this.password) //TODO: Promise is returned
     },
     getJwtToken: function(){
         //FIXME: this
@@ -65,7 +64,20 @@ UserSchema.methods = {
         {
             expiresIn: envConfig.JWT_TOKEN_EXPIRY
         })
+    },
+    generateForgotPasswordToken: function(){
+        const forgotPasswordToken = crypto.randomBytes(20).toString("hex")
+        this.forgotPasswordToken = crypto.createHash("sha256").update(forgotPasswordToken).digest("hex")
+        this.forgotPasswordExpiry = Date.now()+(20*60*1000)
+        return forgotPasswordToken
     }
 }
 
 module.exports = mongoose.model("User", UserSchema)
+
+//FIXME:
+// JWT n Forgot Password testing
+/*
+    Model enhancement:
+        Status - Restrict the authorization
+*/
