@@ -4,7 +4,7 @@
   "description": "A backend for amakart ecommerece website",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node testApp.js"
   },
   "keywords": [
     "MERN",

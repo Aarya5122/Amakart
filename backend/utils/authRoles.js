@@ -3,7 +3,4 @@ const AuthRoles = {
     MODERATOR: "MODERATOR",
     USER: "USER"
 }
-
-export default AuthRoles;
-
-//FIXME: Exporting
+module.exports = AuthRoles;

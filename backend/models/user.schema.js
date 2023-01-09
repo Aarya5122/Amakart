@@ -1,12 +1,11 @@
-import mongoose from "mongoose"
-import AuthRoles from "../utils/authRoles"
-import JWT from "jsonwebtoken"
-import crypto from "crypto"
-import bcrypt from "bcrypt"
-import envConfig from "../config"
-import {envConfigDes} from "../config"
+const mongoose = require("mongoose")
+const AuthRoles = require("../utils/authRoles")
+const JWT = require("jsonwebtoken")
+const crypto = require("crypto") //FIXME:
+const bcrypt = require("bcrypt")
+const envConfig = require("../config")
 
-// FIXME: new and import, export, DESENV
+// FIXME: new
 const UserSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -25,7 +24,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         require: [true, "Password is required"],
         minLength: [8, "Password length must be atleast of 8 charecters"],
-        select: false //FIXME:
+        select: false //FIXME: Updated
     },
     role: {
         type: String,
@@ -41,11 +40,11 @@ const UserSchema = new mongoose.Schema({
 
 UserSchema.pre("save", async function(next){ //TODO: use function statements
     
-    //TODO: this.modified("key") TODO:
-    if(!this.modified("password")){
+    //TODO: this.isModified("key") TODO:
+    if(!this.isModified("password")){
         return next();
     }
-    this.password = await bcrypt.hash(this.password, envConfigDes.BCRYPT_PASSWORD_SALT) //FIXME: await
+    this.password = await bcrypt.hash(this.password, Number(envConfig.BCRYPT_PASSWORD_SALT))
     next()
 
 })
@@ -53,8 +52,8 @@ UserSchema.pre("save", async function(next){ //TODO: use function statements
 //FIXME: Mongoose Schema Methods
 
 UserSchema.methods = {
-    comparePassword: async function(enteredPassword){
-        return await bcrypt.compare(enteredPassword, this.password) //TODO: Boolean is returned
+    comparePassword: function(enteredPassword){
+        return bcrypt.compare(enteredPassword, this.password) //TODO: Promise is returned
     },
     getJwtToken: function(){
         //FIXME: this
@@ -69,4 +68,4 @@ UserSchema.methods = {
     }
 }
 
-export default mongoose.model("User", UserSchema)
+module.exports = mongoose.model("User", UserSchema)
