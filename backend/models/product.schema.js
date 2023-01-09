@@ -32,7 +32,8 @@ const productSchema = new mongoose.Schema({
     },
     collectionId: {
         type: mongoose.Schema.Types.ObjectId, //FIXME:
-        ref: "Collection" //FIXME:
+        ref: "Collection", //FIXME:
+        required: [true, "Please provide collection ID for the product"]
     }
 }, 
 {
@@ -46,4 +47,7 @@ module.exports = mongoose.model("Product", productSchema)
  * Assignments
  * Mark Down implementation for description
  * Review: ratings + comments
+ * 
+ * Wishlist Model
+ * Cart Model
  */
