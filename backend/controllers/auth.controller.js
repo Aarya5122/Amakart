@@ -2,6 +2,7 @@ const  User = require("../models/user.schema")
 const asyncHandler = require("../services/asyncHandler")
 const CustomError = require("../utils/customError")
 const mailHelper = require("../utils/mailHelper")
+const crypto = require("crypto")
 
 //FIXME: Custom file
 exports.cookieOptions = {
@@ -147,8 +148,57 @@ exports.forgotPassword = asyncHandler(
 
 /******************************************************************************************
  * @RESET_PASSWORD
- * @route http://localhost:4000/api/auth/password/reset
+ * @route http://localhost:4000/api/auth/password/reset/:resetPasswordToken
  * @description User will send email and we will generate a token
- * @param email
- * @returns message - Email sent
+ * @param token from url, password, confirm password
+ * @returns User Object
  ******************************************************************************************/
+
+exports.resetPassword = asyncHandler(
+    async (req, res) => { 
+        const {token: resetPasswordToken} = req.params
+        
+        if(!token || typeof(token)!=="string"){
+            throw new CustomError("Please send a valid token")
+        }
+
+        const {password, confirmPassword} = req.body
+        
+        if(!password || typeof(password)!=="string" || !confirmPassword || typeof(confirmPassword)!=="string"){
+            throw new CustomError("Please send a valid password and conform password value")
+        }
+        const encryptedToken = crypto.createHash("sha256").update(token).digest("hex")
+        
+        const user = await User.findOne({ //FIXME:
+            forgotPasswordToken: encryptedToken,
+            forgotPasswordExpiry: {$gt: Date.now()}
+        })
+
+        if(!user){
+            throw new CustomError("Reset password token is invalid or expired", 400)
+        }
+
+        if(password!==confirmPassword){
+            throw new CustomError("Password and Confirm Password does not match")
+        }
+
+        user.password = password
+        user.forgotPasswordToken = undefined
+        user.forgotPasswordExpiry = undefined
+
+        await user.save({validateBeforeSave: false})
+
+        user.password = undefined
+        password = undefined
+        confirmPassword = undefined
+
+        const token = user.getJwtToken()
+       
+        res.cookie("token", token, cookieOptions)
+
+        res.status(200).json({
+            success: true,
+            user
+        })
+    }
+)
