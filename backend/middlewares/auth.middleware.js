@@ -15,7 +15,7 @@ exports.isLoggedIn = asyncHandler(
         }
         try {
             const decodedJwtPayload = JWT.verify(token, envConfig.JWT_TOKEN_SECRET)
-            req.user = await User.findById(decodedJwtPayload._id, "name email role") //FIXME:
+            req.user = await User.findById(decodedJwtPayload._id, "_id name email role") //FIXME:
             next()
         } catch (error) {
             throw new CustomError("Not authorised to access this route", 401);

@@ -4,7 +4,7 @@ const CustomError = require("../utils/customError")
 const mailHelper = require("../utils/mailHelper")
 const crypto = require("crypto")
 
-//FIXME: Custom file
+//FIXME: Custom file - Cookie Helper - JWT Helper
 exports.cookieOptions = {
     expires: new Date(Date.now()+3*24*60*60*1000),
     httpOnly: true
@@ -12,8 +12,10 @@ exports.cookieOptions = {
 
 /******************************************************************************************
  * @SIGNUP
+ * @REQUEST_TYPE POST
  * @route http://localhost:4000/api/auth/signup
  * @description User signup controller for registering new user
+ * @param name, email, password
  * @returns User Object, Token
  ******************************************************************************************/
 
@@ -44,6 +46,7 @@ exports.signUp = asyncHandler(
 
 /******************************************************************************************
  * @LOGIN
+ * @REQUEST_TYPE POST
  * @route http://localhost:4000/api/auth/login
  * @description User login controller for logging in user
  * @param email, password
@@ -75,8 +78,10 @@ exports.login = asyncHandler(
 
 /******************************************************************************************
  * @LOGOUT
+ * @REQUEST_TYPE GET
  * @route http://localhost:4000/api/auth/login
  * @description User logout controller for logging out user by clearing user cookies
+ * @param
  * @returns message
  ******************************************************************************************/
 
@@ -102,6 +107,7 @@ exports.logout = asyncHandler(
 
 /******************************************************************************************
  * @FORGOT_PASSWORD
+ * @REQUEST_TYPE GET
  * @route http://localhost:4000/api/auth/password/forgot
  * @description User will send email and we will generate a token
  * @param email
@@ -148,6 +154,7 @@ exports.forgotPassword = asyncHandler(
 
 /******************************************************************************************
  * @RESET_PASSWORD
+ * @REQUEST_TYPE PUT
  * @route http://localhost:4000/api/auth/password/reset/:resetPasswordToken
  * @description User will send email and we will generate a token
  * @param token from url, password, confirm password
@@ -165,7 +172,7 @@ exports.resetPassword = asyncHandler(
         const {password, confirmPassword} = req.body
         
         if(!password || typeof(password)!=="string" || !confirmPassword || typeof(confirmPassword)!=="string"){
-            throw new CustomError("Please send a valid password and conform password value")
+            throw new CustomError("Please send a valid password and confirm password value")
         }
         const encryptedToken = crypto.createHash("sha256").update(token).digest("hex")
         
@@ -205,48 +212,44 @@ exports.resetPassword = asyncHandler(
 
 /******************************************************************************************
  * @CHANGE_PASSWORD
+ * @REQUEST_TYPE PUT
  * @route http://localhost:4000/api/auth/password/change
- * @description User will send email and we will generate a token
- * @param token from url, password, confirm password
+ * @description Based on user id in request. Compare old password, Generate new password and update
+ * @param _id --> Request, old password, new password, confirm password
  * @returns User Object
  ******************************************************************************************/
 
 exports.changePassword = asyncHandler(
     async (req, res) => { 
-        const {token: resetPasswordToken} = req.params
-        
-        if(!token || typeof(token)!=="string"){
-            throw new CustomError("Please send a valid token")
-        }
 
-        const {password, confirmPassword} = req.body
+        const {oldPassword, newPassword, confirmPassword} = req.body
         
-        if(!password || typeof(password)!=="string" || !confirmPassword || typeof(confirmPassword)!=="string"){
-            throw new CustomError("Please send a valid password and conform password value")
+        if(!oldPassword || typeof(oldPassword)!=="string" || !newPassword || typeof(newPassword)!=="string" || !confirmPassword || typeof(confirmPassword)!=="string"){
+            throw new CustomError("Please send a valid old password new password and confirm password value")
         }
-        const encryptedToken = crypto.createHash("sha256").update(token).digest("hex")
         
-        const user = await User.findOne({ //FIXME:
-            forgotPasswordToken: encryptedToken,
-            forgotPasswordExpiry: {$gt: Date.now()}
-        })
+        const user = await User.findById(req.user._id)
 
         if(!user){
-            throw new CustomError("Reset password token is invalid or expired", 400)
+            throw new CustomError("User not found", 400)
         }
 
-        if(password!==confirmPassword){
-            throw new CustomError("Password and Confirm Password does not match")
+        const validPassword = await user.comparePassword(oldPassword)
+
+        if(!validPassword){
+            throw new CustomError("Invalid credentials", 400)
         }
 
-        user.password = password
-        user.forgotPasswordToken = undefined
-        user.forgotPasswordExpiry = undefined
+        if(newPassword!==confirmPassword){
+            throw new CustomError("New Password and Confirm Password does not match")
+        }
 
+        user.password = newPassword
         await user.save({validateBeforeSave: false})
 
         user.password = undefined
-        password = undefined
+        oldPassword = undefined
+        newPassword = undefined
         confirmPassword = undefined
 
         const token = user.getJwtToken()
