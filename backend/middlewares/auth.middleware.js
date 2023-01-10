@@ -5,7 +5,7 @@ const envConfig = require("../config/index")
 const JWT = require("jsonwebtoken")
 
 exports.isLoggedIn = asyncHandler(
-    async (req, res, next)=>{
+    async (req, _res, next)=>{
         let token;
         if( (req.cookies.token) || (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) ){
             token = req.cookies.token || req.headers.authorization.split(" ")[1]
