@@ -92,4 +92,8 @@ exports.logout = asyncHandler(
     }
 )
 
-//FIXME: Nodemailer
+//FIXME: 
+/**
+ * Send mails: Nodemailer - Gmail (secure: true)
+ * Test Email service - sendGrid, amazon SES, mailnator, mailtrp
+ */
