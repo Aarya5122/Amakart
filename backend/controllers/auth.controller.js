@@ -1,6 +1,7 @@
 const  User = require("../models/user.schema")
 const asyncHandler = require("../services/asyncHandler")
 const CustomError = require("../utils/customError")
+const mailHelper = require("../utils/mailHelper")
 
 //FIXME: Custom file
 exports.cookieOptions = {
@@ -9,7 +10,7 @@ exports.cookieOptions = {
 } 
 
 /******************************************************************************************
- * @signup
+ * @SIGNUP
  * @route http://localhost:4000/api/auth/signup
  * @description User signup controller for registering new user
  * @returns User Object, Token
@@ -41,7 +42,7 @@ exports.signUp = asyncHandler(
 )
 
 /******************************************************************************************
- * @login
+ * @LOGIN
  * @route http://localhost:4000/api/auth/login
  * @description User login controller for logging in user
  * @param email, password
@@ -72,7 +73,7 @@ exports.login = asyncHandler(
 )
 
 /******************************************************************************************
- * @logout
+ * @LOGOUT
  * @route http://localhost:4000/api/auth/login
  * @description User logout controller for logging out user by clearing user cookies
  * @returns message
@@ -97,3 +98,57 @@ exports.logout = asyncHandler(
  * Send mails: Nodemailer - Gmail (secure: true)
  * Test Email service - sendGrid, amazon SES, mailnator, mailtrp
  */
+
+/******************************************************************************************
+ * @FORGOT_PASSWORD
+ * @route http://localhost:4000/api/auth/password/forgot
+ * @description User will send email and we will generate a token
+ * @param email
+ * @returns message - Email sent
+ ******************************************************************************************/
+
+exports.forgotPassword = asyncHandler(
+    async (req, res) => { 
+        const {email} = req.body
+        if(!email || typeof(email)!=="string"){
+            throw new CustomError("Please send a valid email address")
+        }
+        const user = await User.findOne({email})
+        if(!user){
+            throw new CustomError("User not found", 404)
+        }
+        const token = user.generateForgotPasswordToken()
+        await user.save({validateBeforeSave: false}) //FIXME: All valdations should be available if only save()
+        const resetURL = `${req.protocol}://${req.host}/api/auth/password/reset/${token}`
+        try {
+            mailHelper({
+                email,
+                subject: "Forgot password - Reset Password Link",
+                text: 
+                `
+                    Please reset the link within 15 minutes of receiving email.
+                    Link: ${resetURL}
+
+                    Thank you
+                `
+            })
+            res.status(200).json({
+                success: true,
+                message: `Email sent to ${email}`
+            })
+        } catch (error) {
+            user.forgotPasswordToken = undefined
+            user.forgotPasswordExpiry = undefined
+            await user.save({validateBeforeSave: false})
+            throw new CustomError(err.message || "Email sent failure", 500)
+        }
+    }
+)
+
+/******************************************************************************************
+ * @RESET_PASSWORD
+ * @route http://localhost:4000/api/auth/password/reset
+ * @description User will send email and we will generate a token
+ * @param email
+ * @returns message - Email sent
+ ******************************************************************************************/
