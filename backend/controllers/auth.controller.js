@@ -12,7 +12,7 @@ exports.cookieOptions = {
  * @signup
  * @route http://localhost:4000/api/auth/signup
  * @description User signup controller for registering new user
- * @returns User Object
+ * @returns User Object, Token
  ******************************************************************************************/
 
 exports.signUp = asyncHandler(
@@ -39,3 +39,57 @@ exports.signUp = asyncHandler(
         })
     }
 )
+
+/******************************************************************************************
+ * @login
+ * @route http://localhost:4000/api/auth/login
+ * @description User login controller for logging in user
+ * @param email, password
+ * @returns User Object, Token
+ ******************************************************************************************/
+
+exports.login = asyncHandler(
+    async (req, res) => {
+        const {email, password} = req.body
+        if(!email || !password){
+            throw new CustomError("Please fill all the feilds", 400)
+        }
+        if((email && typeof(email)!=="string") || (password && typeof(password)!=="string")){
+            throw new CustomError("Field values should be of type string", 400)
+        }
+        const user = await User.findOne({email}).select("+password")
+        if(!user || !(await user.comparePassword(password))){
+            throw new CustomError("Invalid Credentials", 400)
+        }
+        const token = user.getJwtToken() //FIXME:
+        user.password = undefined //FIXME: not required as it's a query
+        res.status(200).json({
+            success: true,
+            token,
+            user
+        })
+    }
+)
+
+/******************************************************************************************
+ * @logout
+ * @route http://localhost:4000/api/auth/login
+ * @description User logout controller for logging out user by clearing user cookies
+ * @returns message
+ ******************************************************************************************/
+
+exports.logout = asyncHandler(
+    async (_req, res) => { //TODO: _req: Private, Not used in code block
+        //FIXME: Clear cookie
+        res.cookie("token", null, {
+            expires: new Date(Date.now()),
+            httpOnly: true
+        })
+        res.status(200).json({
+            success: true,
+            message: "User logged out successfully"
+        })
+    }
+)
+
+//FIXME: Nodemailer
