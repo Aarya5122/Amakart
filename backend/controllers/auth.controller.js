@@ -63,7 +63,7 @@ exports.login = asyncHandler(
             throw new CustomError("Field values should be of type string", 400)
         }
         const user = await User.findOne({email}).select("+password")
-        if(!user || !(await user.comparePassword(password))){
+        if(!user || !( user.comparePassword(password))){
             throw new CustomError("Invalid Credentials", 400)
         }
         const token = user.getJwtToken() //FIXME:

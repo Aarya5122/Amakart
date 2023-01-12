@@ -50,7 +50,8 @@ exports.updateCollection = asyncHandler(
              throw new CustomError("Please provide collection name",400)
         }
 
-        const updatedCollection = await Collection.findByIdAndUpdate(id, {name}, {new: true, runValidators: true}) //FIXME:
+        //FIXME:
+        const updatedCollection = await Collection.findByIdAndUpdate(id, {name}, {new: true, runValidators: true}) 
      
         if(!updatedCollection){
             throw new CustomError("Collection not found", 400)

@@ -52,7 +52,7 @@ UserSchema.pre("save", async function(next){ //TODO: use function statements
 
 UserSchema.methods = {
     comparePassword: async function(enteredPassword){
-        return await bcrypt.compare(enteredPassword, this.password) //TODO: Promise is returned FIXME:
+        return bcrypt.compare(enteredPassword, this.password) //TODO: Promise is returned FIXME:
     },
     getJwtToken: function(){
         //FIXME: this
